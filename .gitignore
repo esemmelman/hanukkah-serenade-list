@@ -1,6 +1,7 @@
 outputs/
 output/
 tmp/
+supabase/.temp/
 node_modules/
 .env*
 .clasp.json

@@ -2,13 +2,13 @@
 
 [Program website](https://esemmelman.github.io/hanukkah-serenade-list/)
 
-This program fetches current `hanukkah-signup` entries and creates a downloadable PDF directly in the browser. Google Apps Script and Google Sheets are not used.
+This program displays current `hanukkah-signup` entries on screen and provides a downloadable PDF created directly in the browser. Google Apps Script and Google Sheets are not used.
 
 ## Use
 
-Open the program website, enter your organizer passcode, click **Create PDF**, then **Download PDF**. After successful authentication, that browser stays signed in for 90 days. Keep the passcode private: anyone possessing it can read the signup contacts. Replaced access codes and previous organizer links are no longer accepted.
+Open the program website. If requested, enter your organizer passcode and click **Sign in and view signups**. The current list loads automatically on launch for a remembered organizer. After successful authentication, that browser stays signed in for 90 days. Keep the passcode private: anyone possessing it can read the signup contacts. Replaced access codes and previous organizer links are no longer accepted.
 
-Each click fetches current records. The PDF is landscape US Letter, sorted by first name, with names, formatted US cell numbers, emails, three date columns, accompanying guests, and totals. Long lists paginate with repeated headers. One row represents a signup party. Each selected night counts the full party; the party-size total counts people once per signup. Duplicate signup submissions remain separate records.
+The screen lists names, formatted US cell numbers, emails, three date columns, accompanying guests, and totals in first-name order. **Refresh signups** fetches the latest records. **Download PDF** saves the same displayed list as a landscape US Letter PDF. Long PDFs paginate with repeated headers. One row represents a signup party. Each selected night counts the full party; the party-size total counts people once per signup. Duplicate signup submissions remain separate records. A failed refresh labels any previous on-screen list as stale and hides its PDF link until a successful refresh.
 
 ## Implementation and privacy
 
