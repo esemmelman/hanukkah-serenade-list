@@ -1,34 +1,31 @@
 # Hanukkah serenade list
 
-Google Apps Script program that reads the existing `hanukkah-signup` Supabase table and refreshes a Google Sheet with names, cell phones, emails, three date headcounts, party sizes, accompanying names, and totals. Alphabetized by first name (full-name alphabetical order).
+Refresh the existing [Google Sheet](https://docs.google.com/spreadsheets/d/1gMip7rqtPr6wbGWquq8UKqeLjW9Bpg8nQfYOirxi3_w/edit?gid=851372248) from current `hanukkah-signup` database entries with a button. Output is alphabetized by first name, with `(###) ###-####` US phone numbers, emails, December 5/6/8 headcounts, party sizes, accompanying names, and totals.
 
-## Output
+[Program website](https://esemmelman.github.io/hanukkah-serenade-list/)
 
-[Open the Google Sheet](https://docs.google.com/spreadsheets/d/1gMip7rqtPr6wbGWquq8UKqeLjW9Bpg8nQfYOirxi3_w/edit).
+## Google app
 
-The initial sheet is a verified November 16, 2026 snapshot. The refresh program is provided here; it must be installed and authorized in your Google account before the menu can refresh live data.
+The refresh app is installed in [this Apps Script project](https://script.google.com/home/projects/11t-cCYYpVIFbyGc0syR4Q5HEh1mUZ1bI0wU2iAyKaPwAIPoc6I1zn4ZO/edit). Deployment is restricted to **Only myself**, executing as the organizer. Google authorization is required before the first deployment can complete. Once deployed, the website links to the app's **Refresh Spreadsheet** button.
 
-## Install the refresh menu (once)
+The button fetches and validates live data before clearing the generated output. It then replaces the `Serenaders` tab's generated columns A:H, retains first-name order, and displays the number of signups, people, and nightly totals. No write happens while merely opening the page. Keep manual notes in a different tab. Failed reads preserve existing output; write failures are reported and can be retried.
 
-1. Open the output sheet. Select **Extensions → Apps Script**.
-2. Replace the default code with [Code.gs](Code.gs) and save.
-3. In **Project Settings → Script properties**, add `SUPABASE_SECRET_KEY` with your secret API key (or legacy service-role key) from the Supabase project `fgomaujsdblpzxhnnqrg`. A publishable key cannot read the private contact fields. Never put this value in the code or GitHub. Only trusted administrators should have edit access to the spreadsheet or its bound script.
-4. Select `refreshSerenaders` in Apps Script and run it. Authorize access to this spreadsheet and the external signup database. Optional: enable the manifest in Project Settings and replace it with [appsscript.json](appsscript.json) to use the declared scopes.
-5. Reload the sheet. Use **Serenaders → Refresh signup list** whenever you need current signups.
+## Security and hosting
 
-The generated `Serenaders` tab belongs to the program. Keep manual notes in another tab. The GitHub Pages frontend opens the existing Google Sheet. The refresh program runs inside Google Sheets; the static website does not read private contacts or refresh the database itself.
+- GitHub Pages hosts the public landing page. It contains no private signup data or credentials.
+- Google Apps Script performs spreadsheet writes using the organizer's Google authorization. It has access to spreadsheets, email identity, and external requests; its code targets only the linked spreadsheet.
+- `supabase/functions/serenade-admin-data/index.ts` is deployed in project `fgomaujsdblpzxhnnqrg`. It accepts POST requests with a Google access token, validates that token against Google's userinfo endpoint, and permits only the verified organizer email. Supabase's JWT verification is disabled for this function because it implements Google authentication itself.
+- The database service credential stays in the Supabase runtime. No key needs to be pasted into Apps Script or stored in GitHub.
+- The endpoint returns no contact data to unauthenticated or other Google accounts. Its responses disable caching.
+
+## Updating the Google app
+
+The project was installed through the Google editor because connected tools cannot create Apps Script projects. `Code.gs` and `appsscript.json` contain the maintained refresh implementation and scopes. For updates, paste `Code.gs` into the existing project, apply the manifest scopes, then update the existing deployment to a new version while retaining **Only myself** access. Keep the published app URL in `docs/index.html` synchronized after a new deployment.
 
 ## Counting rules
 
-- One row per signup party; guests are listed alongside the main signup's contact information. The signup form collects no separate contact details for guests.
-- December 5, 6, and 8, 2026 are the three date columns. A selected date receives the signup's `people_count`; an unselected date receives zero.
-- Party size totals people once per signup; a person attending several nights appears in several date totals. These are not unique-person counts across duplicate signup submissions.
-- Older entries with a larger party size and no guest names retain their recorded headcount. Rows without selected dates remain listed with zero date counts.
-- The program reads all pages, validates results before writing, serializes refreshes with a lock, escapes formula-like text, and clears stale output when signups shrink. Failed reads preserve the previous output. Concurrent changes to the signup list during pagination may require another refresh.
+Each row is one signup party. Guests share the main signup contact information. A selected date receives the full `people_count`; unselected dates receive zero. Party size totals people once per signup. The same person can appear in multiple date totals; duplicate signup submissions remain separate entries. Older entries retain recorded headcounts even if guest names were not collected.
 
-## Checks
+## Verification
 
-Run `npm test` with Node.js 18 or newer. No package installation is needed. Tests cover first-name order, multi-person and multi-night counts, empty and legacy entries, invalid input, and spreadsheet formula injection. The Google Apps Script runtime itself requires installation and authorization in Google Sheets.
-
-The initial private snapshot and workbook build files are excluded from Git. Only code, documentation, and synthetic test data are published.
-
+Run `npm test` with Node.js. Tests cover alphabetical order, party/date counts, empty and legacy entries, phone formats, validation, formula-like text, and preservation of the spreadsheet on failed fetches. Initial workbook and private snapshot artifacts are ignored by Git. End-to-end Google app verification requires completing the Google authorization in the browser.
