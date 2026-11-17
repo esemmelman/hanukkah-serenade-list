@@ -8,10 +8,7 @@ function onOpen() {
 }
 
 function buildReport(signups) {
-  const key = name => {
-    const words = name.trim().split(/\s+/);
-    return words[words.length - 1] + ' ' + name;
-  };
+  const key = name => name.trim();
   return signups.map(s => {
     const guests = s.additional_names || [];
     if (!s.full_name || !Number.isInteger(s.people_count) || s.people_count < 1 ||
@@ -71,7 +68,7 @@ function refreshSerenaders() {
     sheet.getRange(1, 1, 1, 8).merge();
     sheet.getRange(1, 1).setValue('Hanukkah serenaders — December 2026').setFontWeight('bold');
     sheet.getRange(2, 1, 1, 8).merge();
-    sheet.getRange(2, 1).setValue('Updated ' + Utilities.formatDate(new Date(), 'America/Los_Angeles', 'MMM d, yyyy h:mm a') + ' Pacific · Sorted by last name');
+    sheet.getRange(2, 1).setValue('Updated ' + Utilities.formatDate(new Date(), 'America/Los_Angeles', 'MMM d, yyyy h:mm a') + ' Pacific · Sorted by first name');
     sheet.getRange(3, 1, values.length, 8).setValues(values);
     // Remove stale rows after a shorter refresh, within the generated columns only.
     const oldLast = sheet.getLastRow();

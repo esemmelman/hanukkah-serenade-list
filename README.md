@@ -1,6 +1,6 @@
 # Hanukkah serenade list
 
-Google Apps Script program that reads the existing `hanukkah-signup` Supabase table and refreshes a Google Sheet with names, cell phones, emails, three date headcounts, party sizes, accompanying names, and totals. Alphabetized by the last word in the main signup name (last name), then full name.
+Google Apps Script program that reads the existing `hanukkah-signup` Supabase table and refreshes a Google Sheet with names, cell phones, emails, three date headcounts, party sizes, accompanying names, and totals. Alphabetized by first name (full-name alphabetical order).
 
 ## Output
 
@@ -16,7 +16,7 @@ The initial sheet is a verified November 16, 2026 snapshot. The refresh program 
 4. Select `refreshSerenaders` in Apps Script and run it. Authorize access to this spreadsheet and the external signup database. Optional: enable the manifest in Project Settings and replace it with [appsscript.json](appsscript.json) to use the declared scopes.
 5. Reload the sheet. Use **Serenaders → Refresh signup list** whenever you need current signups.
 
-The generated `Serenaders` tab belongs to the program. Keep manual notes in another tab. There is no public web app deployment and no GitHub Pages frontend: the program runs inside Google Sheets, so no separate backend host is needed.
+The generated `Serenaders` tab belongs to the program. Keep manual notes in another tab. The GitHub Pages frontend opens the existing Google Sheet. The refresh program runs inside Google Sheets; the static website does not read private contacts or refresh the database itself.
 
 ## Counting rules
 
@@ -28,6 +28,7 @@ The generated `Serenaders` tab belongs to the program. Keep manual notes in anot
 
 ## Checks
 
-Run `npm test` with Node.js 18 or newer. No package installation is needed. Tests cover last-name order, multi-person and multi-night counts, empty and legacy entries, invalid input, and spreadsheet formula injection. The Google Apps Script runtime itself requires installation and authorization in Google Sheets.
+Run `npm test` with Node.js 18 or newer. No package installation is needed. Tests cover first-name order, multi-person and multi-night counts, empty and legacy entries, invalid input, and spreadsheet formula injection. The Google Apps Script runtime itself requires installation and authorization in Google Sheets.
 
 The initial private snapshot and workbook build files are excluded from Git. Only code, documentation, and synthetic test data are published.
+
