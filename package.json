@@ -1,0 +1,6 @@
+{
+  "name": "hanukkah-serenade-list",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": { "test": "node --test tests/report.test.cjs" }
+}

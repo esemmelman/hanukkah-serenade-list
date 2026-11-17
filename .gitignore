@@ -1,0 +1,5 @@
+outputs/
+node_modules/
+.env*
+.clasp.json
+*.local.json
