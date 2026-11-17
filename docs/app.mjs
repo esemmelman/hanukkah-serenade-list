@@ -6,12 +6,14 @@ document.querySelector('#access-section').hidden=!!accessCode;
 if(accessCode)status.textContent='Ready. Create a PDF from the latest signups.';
 form.addEventListener('submit',async event=>{
   event.preventDefault();if(button.disabled)return;
-  accessCode=accessCode||access.value.trim();
-  if(!accessCode){status.textContent='Open your private organizer link or enter its access code.';access.focus();return;}
+  accessCode=access.value.trim()||accessCode;
+  if(!accessCode){status.textContent='Enter your organizer passcode.';access.focus();return;}
   button.disabled=true;download.hidden=true;status.textContent='Fetching current signups…';
   try{
     const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessCode}),cache:'no-store',signal:AbortSignal.timeout(60000)});
-    const result=await response.json();if(!response.ok)throw new Error(result.error||'Could not fetch the signup list.');
+    const result=await response.json();
+    if(response.status===401){accessCode='';document.querySelector('#access-section').hidden=false;access.value='';window.history.replaceState(null,'',location.pathname);}
+    if(!response.ok)throw new Error(result.error||'Could not fetch the signup list.');
     const report=buildReport(result.signups);status.textContent='Creating your PDF…';
     const pdf=createReportPdf(window.jspdf.jsPDF,report);
     if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(pdf.output('blob'));

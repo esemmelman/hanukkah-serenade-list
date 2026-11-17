@@ -1,4 +1,5 @@
-const ACCESS_HASH = '5b5d2452531a161312445bb9145953bd67818be9e12494feae92772cb8b270a8';
+// Replaced only in the deployment payload; credential verifiers stay out of Git.
+const ACCESS_HASH = '__DEPLOYMENT_ACCESS_HASH__';
 const ORIGIN = 'https://esemmelman.github.io';
 export async function handle(req: Request): Promise<Response> {
   const origin = req.headers.get('Origin');
@@ -12,7 +13,7 @@ export async function handle(req: Request): Promise<Response> {
     const body = await req.text();
     if(body.length > 1024) return reply({error:'Invalid request'},400);
     const {accessCode} = JSON.parse(body);
-    if(typeof accessCode !== 'string' || accessCode.length > 128 || accessCode.length < 32) return reply({error:'Use your private organizer link.'},401);
+    if(typeof accessCode !== 'string' || accessCode.length > 128 || !accessCode.length) return reply({error:'Enter the organizer passcode.'},401);
     const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(accessCode))), b=>b.toString(16).padStart(2,'0')).join('');
     let difference=0;for(let i=0;i<ACCESS_HASH.length;i++)difference|=ACCESS_HASH.charCodeAt(i)^digest.charCodeAt(i);
     if(difference !== 0) return reply({error:'Organizer access code is not valid.'},401);
