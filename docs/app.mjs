@@ -18,7 +18,6 @@ function renderReport(value){
   if(!value.rows.length){const tr=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=8;cell.textContent='No signups yet.';tr.append(cell);body.append(tr);}
   const total=$('#signup-totals');total.replaceChildren();
   ['TOTAL','','',...value.totals,''].forEach((text,index)=>{const cell=document.createElement(index===0?'th':'td');if(index===0)cell.scope='row';cell.textContent=String(text);total.append(cell);});
-  $('#summary').textContent=`${value.rows.length} signups · ${value.totals[3]} people · Dec 5: ${value.totals[0]} · Dec 6: ${value.totals[1]} · Dec 8: ${value.totals[2]}`;
   $('#signup-list').hidden=false;
 }
 
@@ -31,14 +30,13 @@ async function loadSignups(){
   try{
     const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(accessCode?{accessCode}:{sessionToken:session.token}),cache:'no-store',signal:AbortSignal.timeout(60000)});
     const result=await response.json();
-    if(response.status===401){accessCode='';session=null;clearSession(storage);form.hidden=false;access.value='';report=null;$('#signup-list').hidden=true;$('#summary').textContent='';refresh.hidden=true;window.history.replaceState(null,'',location.pathname);}
+    if(response.status===401){accessCode='';session=null;clearSession(storage);form.hidden=false;access.value='';report=null;$('#signup-list').hidden=true;refresh.hidden=true;window.history.replaceState(null,'',location.pathname);}
     if(!response.ok)throw new Error(result.error||'Could not fetch the signup list.');
     const current=buildReport(result.signups);
     session=result.session;saveSession(storage,session);accessCode='';access.value='';form.hidden=true;
     report=current;renderReport(report);
     const now=new Date();
-    const stamp=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',dateStyle:'medium',timeStyle:'short'}).format(now);
-    status.textContent=`Updated ${stamp} Pacific. Sorted by first name.`;
+    status.textContent='';
     try{
       const pdf=createReportPdf(window.jspdf.jsPDF,report,now);
       if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(pdf.output('blob'));
