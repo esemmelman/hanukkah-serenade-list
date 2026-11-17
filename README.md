@@ -6,7 +6,7 @@ This program fetches current `hanukkah-signup` entries and creates a downloadabl
 
 ## Use
 
-Open the program website, enter your organizer passcode, click **Create PDF**, then **Download PDF**. Keep the passcode private: anyone possessing it can read the signup contacts. Replaced access codes and previous organizer links are no longer accepted.
+Open the program website, enter your organizer passcode, click **Create PDF**, then **Download PDF**. After successful authentication, that browser stays signed in for 90 days. Keep the passcode private: anyone possessing it can read the signup contacts. Replaced access codes and previous organizer links are no longer accepted.
 
 Each click fetches current records. The PDF is landscape US Letter, sorted by first name, with names, formatted US cell numbers, emails, three date columns, accompanying guests, and totals. Long lists paginate with repeated headers. One row represents a signup party. Each selected night counts the full party; the party-size total counts people once per signup. Duplicate signup submissions remain separate records.
 
@@ -16,7 +16,8 @@ Each click fetches current records. The PDF is landscape US Letter, sorted by fi
 - `docs/report.mjs` validates, sorts, formats, totals, and generates PDFs. Contact fields are passed as plain PDF text, never HTML.
 - `supabase/functions/serenade-export-data/index.ts` is a read-only endpoint in project `fgomaujsdblpzxhnnqrg`. It hashes the submitted organizer code before comparison, then reads the fixed signup table with its server-only credential. No database key reaches the browser. Platform JWT verification is disabled because the function performs its own access-code authentication.
 - Responses disable caching. CORS accepts only the program's GitHub Pages origin. A restrictive Content Security Policy limits scripts to bundled files and requests to the existing Supabase project.
-- The passcode stays in page memory. It is not saved in browser storage, cookies, Git, or public website files. A SHA-256 verifier is substituted for `__DEPLOYMENT_ACCESS_HASH__` only in the private deployment payload. Do not deploy the source placeholder unchanged. Replacing that verifier revokes previous codes. Never commit the passcode or its current verifier.
+- The passcode is never saved in browser storage, cookies, Git, or public website files. Instead, a server-signed session token is stored in this browser's local storage for 90 days from sign-in. The server checks its signature and expiration on every fetch; reuse does not extend the expiration. Clearing site data, changing browsers, or rotating the passcode requires signing in again. Browsers that block storage retain authentication only while the page remains open.
+- Session signatures use a server-only key tied to the passcode verifier, so changing the passcode also revokes existing sessions. A SHA-256 verifier is substituted for `__DEPLOYMENT_ACCESS_HASH__` only in the private deployment payload. Do not deploy the source placeholder unchanged. Never commit the passcode or its current verifier.
 - The old `serenade-admin-data` Google integration now returns HTTP 410 and no contact data. Existing Google app projects are not used by this program.
 
 ## Development
