@@ -1,31 +1,28 @@
-# Hanukkah serenade list
-
-Refresh the existing [Google Sheet](https://docs.google.com/spreadsheets/d/1gMip7rqtPr6wbGWquq8UKqeLjW9Bpg8nQfYOirxi3_w/edit?gid=851372248) from current `hanukkah-signup` database entries with a button. Output is alphabetized by first name, with `(###) ###-####` US phone numbers, emails, December 5/6/8 headcounts, party sizes, accompanying names, and totals.
+# Hanukkah serenade PDF
 
 [Program website](https://esemmelman.github.io/hanukkah-serenade-list/)
 
-## Google app
+This program fetches current `hanukkah-signup` entries and creates a downloadable PDF directly in the browser. Google Apps Script and Google Sheets are not used.
 
-The refresh app is installed in [this Apps Script project](https://script.google.com/home/projects/11t-cCYYpVIFbyGc0syR4Q5HEh1mUZ1bI0wU2iAyKaPwAIPoc6I1zn4ZO/edit). Deployment is restricted to **Only myself**, executing as the organizer. Google authorization is required before the first deployment can complete. Once deployed, the website links to the app's **Refresh Spreadsheet** button.
+## Use
 
-The button fetches and validates live data before clearing the generated output. It then replaces the `Serenaders` tab's generated columns A:H, retains first-name order, and displays the number of signups, people, and nightly totals. No write happens while merely opening the page. Keep manual notes in a different tab. Failed reads preserve existing output; write failures are reported and can be retried.
+Open the private organizer link supplied separately, click **Create PDF**, then **Download PDF**. The organizer link contains a read-only access code in its URL fragment. Keep it private: anyone possessing that code can read the signup contacts. The public website also accepts the code manually.
 
-## Security and hosting
+Each click fetches current records. The PDF is landscape US Letter, sorted by first name, with names, formatted US cell numbers, emails, three date columns, accompanying guests, and totals. Long lists paginate with repeated headers. One row represents a signup party. Each selected night counts the full party; the party-size total counts people once per signup. Duplicate signup submissions remain separate records.
 
-- GitHub Pages hosts the public landing page. It contains no private signup data or credentials.
-- Google Apps Script performs spreadsheet writes using the organizer's Google authorization. It has access to spreadsheets, email identity, and external requests; its code targets only the linked spreadsheet.
-- `supabase/functions/serenade-admin-data/index.ts` is deployed in project `fgomaujsdblpzxhnnqrg`. It accepts POST requests with a Google access token, validates that token against Google's userinfo endpoint, and permits only the verified organizer email. Supabase's JWT verification is disabled for this function because it implements Google authentication itself.
-- The database service credential stays in the Supabase runtime. No key needs to be pasted into Apps Script or stored in GitHub.
-- The endpoint returns no contact data to unauthenticated or other Google accounts. Its responses disable caching.
+## Implementation and privacy
 
-## Updating the Google app
+- `docs/` is a static GitHub Pages app. Pinned jsPDF and AutoTable distributions and licenses are served locally from `docs/vendor/`; there are no third-party scripts or analytics.
+- `docs/report.mjs` validates, sorts, formats, totals, and generates PDFs. Contact fields are passed as plain PDF text, never HTML.
+- `supabase/functions/serenade-export-data/index.ts` is a read-only endpoint in project `fgomaujsdblpzxhnnqrg`. It hashes the submitted organizer code before comparison, then reads the fixed signup table with its server-only credential. No database key reaches the browser. Platform JWT verification is disabled because the function performs its own access-code authentication.
+- Responses disable caching. CORS accepts only the program's GitHub Pages origin. A restrictive Content Security Policy limits scripts to bundled files and requests to the existing Supabase project.
+- The code stays in page memory and the private URL fragment. It is not saved in browser storage, cookies, Git, or public website files. URL fragments are not sent to GitHub's web server. Changing the embedded SHA-256 hash and redeploying the endpoint revokes the previous organizer link.
+- The old `serenade-admin-data` Google integration now returns HTTP 410 and no contact data. Existing Google app projects are not used by this program.
 
-The project was installed through the Google editor because connected tools cannot create Apps Script projects. `Code.gs` and `appsscript.json` contain the maintained refresh implementation and scopes. For updates, paste `Code.gs` into the existing project, apply the manifest scopes, then update the existing deployment to a new version while retaining **Only myself** access. Keep the published app URL in `docs/index.html` synchronized after a new deployment.
+## Development
 
-## Counting rules
+Use Node.js 24 or newer. Run `npm ci` and `npm test`. Tests cover first-name sorting, date/party counts, phone formatting, invalid and legacy input, real PDF creation and pagination, denied access, origin checks, and database pagination.
 
-Each row is one signup party. Guests share the main signup contact information. A selected date receives the full `people_count`; unselected dates receive zero. Party size totals people once per signup. The same person can appear in multiple date totals; duplicate signup submissions remain separate entries. Older entries retain recorded headcounts even if guest names were not collected.
+For a local preview, serve `docs/` with a static server. Live browser reads require the production origin, by design. Test endpoint reads with the organizer code from an ignored local configuration, never by putting a code into source or fixtures.
 
-## Verification
-
-Run `npm test` with Node.js. Tests cover alphabetical order, party/date counts, empty and legacy entries, phone formats, validation, formula-like text, and preservation of the spreadsheet on failed fetches. Initial workbook and private snapshot artifacts are ignored by Git. End-to-end Google app verification requires completing the Google authorization in the browser.
+The generated PDF, private link, and verification artifacts are ignored by Git. The published repository contains code and synthetic test data only.

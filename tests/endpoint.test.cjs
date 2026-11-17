@@ -1,39 +1,17 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const vm = require('node:vm');
-const fs = require('node:fs');
-const { stripTypeScriptTypes } = require('node:module');
-const source = stripTypeScriptTypes(fs.readFileSync('supabase/functions/serenade-admin-data/index.ts', 'utf8').replace('export async function', 'async function'));
-function endpoint(fetch) {
-  let handler;
-  const context = vm.createContext({ Request, Response, URLSearchParams, AbortSignal, fetch,
-    Deno: { env: { get: name => name === 'SUPABASE_URL' ? 'https://database.example' : 'server-key' }, serve: h => { handler = h; } } });
-  vm.runInContext(source, context);
-  return handler;
-}
-test('rejects missing authorization without contacting the database', async () => {
-  const handle = endpoint(() => assert.fail('No external call permitted'));
-  const response = await handle(new Request('https://example.org', { method: 'POST' }));
-  assert.equal(response.status, 401);
+const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');const {stripTypeScriptTypes}=require('node:module');const {webcrypto,createHash}=require('node:crypto');
+const testKey='synthetic-access-code-for-security-tests';
+let source=fs.readFileSync('supabase/functions/serenade-export-data/index.ts','utf8').replace(/const ACCESS_HASH = '[a-f0-9]+';/,"const ACCESS_HASH = '"+createHash('sha256').update(testKey).digest('hex')+"';").replace('export async function','async function');source=stripTypeScriptTypes(source);
+function handler(fetch){let handle;vm.runInNewContext(source,{Request,Response,URLSearchParams,AbortSignal,TextEncoder,crypto:webcrypto,fetch,Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://database.example':'server-secret'},serve:h=>handle=h}});return handle;}
+const request=code=>new Request('https://example.org',{method:'POST',headers:{Origin:'https://esemmelman.github.io'},body:JSON.stringify({accessCode:code})});
+test('missing and invalid codes never read contacts',async()=>{
+ const h=handler(()=>assert.fail('Database must not be read'));
+ for(const code of ['', 'incorrect-'.repeat(5)])assert.equal((await h(request(code))).status,401);
 });
-test('rejects another Google account and unverified organizer identities', async () => {
-  for (const user of [{ email: 'other@example.org', email_verified: true }, { email: 'esemmoc@gmail.com', email_verified: false }]) {
-    let calls = 0;
-    const handle = endpoint(async url => { calls++; assert.equal(url, 'https://openidconnect.googleapis.com/v1/userinfo'); return Response.json(user); });
-    assert.equal((await handle(new Request('https://example.org', { method: 'POST', headers: { Authorization: 'Bearer google-token' } }))).status, 403);
-    assert.equal(calls, 1);
-  }
+test('rejects unrelated browser origins',async()=>{
+ const h=handler(()=>assert.fail('Database must not be read'));
+ assert.equal((await h(new Request('https://example.org',{method:'POST',headers:{Origin:'https://unrelated.example'},body:'{}'}))).status,403);
 });
-test('authorized requests paginate live data and never forward the Google token to the database', async () => {
-  let pages = 0;
-  const handle = endpoint(async (url, opts) => {
-    if (url.includes('googleapis.com')) return Response.json({ email: 'esemmoc@gmail.com', email_verified: true });
-    assert.equal(opts.headers.Authorization, 'Bearer server-key');
-    assert.ok(url.includes(`offset=${pages * 500}`));
-    return Response.json(Array.from({ length: pages++ === 0 ? 500 : 1 }, () => ({ full_name: 'Synthetic Person' })));
-  });
-  const response = await handle(new Request('https://example.org', { method: 'POST', headers: { Authorization: 'Bearer google-token' } }));
-  assert.equal(response.status, 200);
-  assert.equal((await response.json()).signups.length, 501);
-  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+test('authorized fetch reads all pages and disables caching',async()=>{
+ let pages=0;const h=handler(async(url,opts)=>{assert.equal(opts.headers.Authorization,'Bearer server-secret');assert.ok(url.includes('offset='+pages*500));return Response.json(Array.from({length:pages++===0?500:1},()=>({full_name:'Synthetic Person'})));});
+ const r=await h(request(testKey));assert.equal(r.status,200);assert.equal((await r.json()).signups.length,501);assert.equal(r.headers.get('Cache-Control'),'no-store');assert.equal(r.headers.get('Access-Control-Allow-Origin'),'https://esemmelman.github.io');
 });
