@@ -20,25 +20,27 @@ test('rejects invalid counts and unexpected dates before writing', () => {
   assert.throws(() => ctx.buildReport([sample('Bad Row', 1, ['2027-01-01'])]));
   assert.throws(() => ctx.buildReport([sample('Bad Row', 1, [], ['Guest'])]));
 });
-test('untrusted strings are literal text', () => {
-  for (const text of ['=IMPORTXML("x")', '+123', '@test', '-1', "'name"]) assert.equal(ctx.sheetText(text), "'" + text);
-  assert.equal(ctx.sheetText(3), 3);
+test('untrusted names and contacts cannot become HTML', () => {
+  assert.equal(ctx.escapeHtml('<img src="x">&'), '&lt;img src=&quot;x&quot;&gt;&amp;');
 });
 test('normalizes US contacts and preserves international numbers', () => {
   assert.equal(ctx.formatPhone('13104879355'), '(310) 487-9355');
   assert.equal(ctx.formatPhone('949-484-3838'), '(949) 484-3838');
   assert.equal(ctx.formatPhone('+44 20 7946 0958'), '+44 20 7946 0958');
 });
-test('failed fetch never opens or clears the spreadsheet and releases the lock', () => {
-  let unlocked = false;
+test('failed fetch never generates a PDF', () => {
   const failure = vm.createContext({
-    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() { unlocked = true; } }) },
     Session: { getActiveUser: () => ({ getEmail: () => 'esemmoc@gmail.com' }) },
     ScriptApp: { getOAuthToken: () => 'test-token' },
     UrlFetchApp: { fetch: () => ({ getResponseCode: () => 502, getContentText: () => '{"error":"Database unavailable"}' }) },
-    SpreadsheetApp: { openById() { assert.fail('Must not open sheet after fetch failure'); } },
+    Utilities: { newBlob() { assert.fail('Must not create PDF after fetch failure'); } },
   });
   vm.runInContext(fs.readFileSync('Code.gs', 'utf8'), failure);
-  assert.throws(() => failure.refreshSerenaders(), /Database unavailable/);
-  assert.equal(unlocked, true);
+  assert.throws(() => failure.createPdf(), /Database unavailable/);
+});
+test('PDF report includes date totals and escapes all contact text', () => {
+  const html = ctx.reportHtml(ctx.buildReport([sample('Amy <Zebra>', 3, ['2026-12-05', '2026-12-08'], ['A', 'B'])]), 'Nov 16');
+  assert.ok(html.includes('Amy &lt;Zebra&gt;'));
+  assert.ok(html.includes('TOTAL'));
+  assert.ok(html.includes('<td class="n">3</td><td class="n">0</td><td class="n">3</td><td class="n">3</td>'));
 });

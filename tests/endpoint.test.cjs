@@ -19,7 +19,7 @@ test('rejects missing authorization without contacting the database', async () =
 test('rejects another Google account and unverified organizer identities', async () => {
   for (const user of [{ email: 'other@example.org', email_verified: true }, { email: 'esemmoc@gmail.com', email_verified: false }]) {
     let calls = 0;
-    const handle = endpoint(async url => { calls++; assert.match(url, /googleapis.com\/oauth2\/v3\/userinfo/); return Response.json(user); });
+    const handle = endpoint(async url => { calls++; assert.equal(url, 'https://openidconnect.googleapis.com/v1/userinfo'); return Response.json(user); });
     assert.equal((await handle(new Request('https://example.org', { method: 'POST', headers: { Authorization: 'Bearer google-token' } }))).status, 403);
     assert.equal(calls, 1);
   }

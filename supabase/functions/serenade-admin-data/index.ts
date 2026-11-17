@@ -4,13 +4,16 @@ export async function handle(req: Request): Promise<Response> {
     status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
   if (req.method !== 'POST') return reply({ error: 'Method not allowed' }, 405);
-  const auth = req.headers.get('Authorization') || '';
+  let payload: { googleAccessToken?: string } = {};
+  try { payload = await req.json(); } catch { /* Header authentication remains supported. */ }
+  const auth = typeof payload.googleAccessToken === 'string'
+    ? 'Bearer ' + payload.googleAccessToken : req.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ') || auth.length > 8192) return reply({ error: 'Google authorization required' }, 401);
   try {
-    const identity = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    const identity = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
       headers: { Authorization: auth }, signal: AbortSignal.timeout(10000),
     });
-    if (!identity.ok) return reply({ error: 'Google authorization expired' }, 401);
+    if (!identity.ok) return reply({ error: 'Google identity check failed (HTTP ' + identity.status + '). Please authorize email access for the app.' }, 401);
     const user = await identity.json();
     if (user.email !== 'esemmoc@gmail.com' || user.email_verified !== true) {
       return reply({ error: 'Organizer account required' }, 403);
